@@ -4,8 +4,22 @@ import com.pou.util.Recursos;
 
 import java.awt.*;
 
+/**
+ * Entidad del jugador controlada por el usuario.
+ * <p>
+ * Pou aplica gravedad constante en cada fotograma y responde a los comandos
+ * de movimiento horizontal. Al rebotar en una nube su velocidad vertical se
+ * reinicia al valor de salto. Si el sprite PNG está disponible en {@link Recursos}
+ * se usa; de lo contrario se dibuja una representación geométrica con ojos
+ * animados según la dirección de movimiento vertical.
+ * </p>
+ */
 public class Pou {
+
+    /** Ancho del sprite/hitbox de Pou en píxeles. */
     public static final int ANCHO = 42;
+
+    /** Alto del sprite/hitbox de Pou en píxeles. */
     public static final int ALTO  = 50;
 
     private static final double GRAVEDAD       = 0.40;
@@ -17,12 +31,25 @@ public class Pou {
     private double velocidadX, velocidadY;
     private boolean moviendoIzquierda, moviendoDerecha;
 
+    /**
+     * Crea a Pou en la posición indicada con velocidad vertical de salto inicial.
+     *
+     * @param x coordenada X del mundo
+     * @param y coordenada Y del mundo
+     */
     public Pou(double x, double y) {
         this.x = x;
         this.y = y;
         this.velocidadY = VEL_SALTO;
     }
 
+    /**
+     * Actualiza la física de Pou en un fotograma: aplica gravedad, limita la
+     * velocidad de caída, aplica el movimiento horizontal y envuelve la posición
+     * horizontal al salir del panel.
+     *
+     * @param anchoPanel ancho del panel en píxeles; se usa para el wrapping horizontal
+     */
     public void actualizar(int anchoPanel) {
         velocidadY += GRAVEDAD;
         if (velocidadY > VEL_MAX_CAIDA) velocidadY = VEL_MAX_CAIDA;
@@ -39,10 +66,22 @@ public class Pou {
         if (x > anchoPanel)  x = -ANCHO;
     }
 
+    /**
+     * Aplica el impulso de salto reiniciando la velocidad vertical al valor negativo
+     * de salto. Lo invoca {@link com.pou.logic.Colision} al detectar un aterrizaje.
+     */
     public void saltar() {
         velocidadY = VEL_SALTO;
     }
 
+    /**
+     * Dibuja a Pou en el contexto gráfico aplicando el desplazamiento de cámara.
+     * Usa el sprite PNG si está cargado; en caso contrario dibuja formas geométricas
+     * con ojos que cambian de expresión según la velocidad vertical.
+     *
+     * @param g2d     contexto gráfico de Swing
+     * @param cameraY desplazamiento vertical de la cámara en coordenadas del mundo
+     */
     public void dibujar(Graphics2D g2d, double cameraY) {
         int sx = (int) x;
         int sy = (int) (y - cameraY);
@@ -82,14 +121,47 @@ public class Pou {
         g2d.fillRoundRect(sx + ANCHO - 17, sy + ALTO - 6, 13, 10, 6, 6);
     }
 
+    /**
+     * Devuelve el rectángulo de colisión de Pou en coordenadas del mundo.
+     *
+     * @return bounds del hitbox
+     */
     public Rectangle getBounds() {
         return new Rectangle((int) x, (int) y, ANCHO, ALTO);
     }
 
+    /**
+     * Devuelve la coordenada X del mundo.
+     *
+     * @return posición horizontal de Pou
+     */
     public double getX()          { return x; }
+
+    /**
+     * Devuelve la coordenada Y del mundo.
+     *
+     * @return posición vertical de Pou
+     */
     public double getY()          { return y; }
+
+    /**
+     * Devuelve la velocidad vertical actual. Positiva = cayendo; negativa = subiendo.
+     *
+     * @return velocidad en píxeles por fotograma en el eje Y
+     */
     public double getVelocidadY() { return velocidadY; }
 
+    /**
+     * Establece si Pou debe moverse hacia la izquierda en el próximo {@link #actualizar}.
+     *
+     * @param v {@code true} para activar el movimiento a la izquierda
+     */
     public void setMoviendoIzquierda(boolean v) { moviendoIzquierda = v; }
+
+    /**
+     * Establece si Pou debe moverse hacia la derecha en el próximo {@link #actualizar}.
+     *
+     * @param v {@code true} para activar el movimiento a la derecha
+     */
     public void setMoviendoDerecha(boolean v)   { moviendoDerecha   = v; }
 }

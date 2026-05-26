@@ -2,8 +2,23 @@ package com.pou.gui;
 
 import java.awt.*;
 
-public class PantallaMenu {
+/**
+ * Vista de la pantalla de menú principal.
+ * <p>
+ * Dibuja el fondo degradado, el título del juego, las instrucciones de controles,
+ * una leyenda de los tipos de nubes y el aviso para comenzar. Las nubes decorativas
+ * del fondo se dibujan con formas geométricas semi-transparentes.
+ * </p>
+ */
+public class PantallaMenu implements Pantalla {
 
+    /**
+     * Renderiza la pantalla completa del menú principal en el contexto gráfico dado.
+     *
+     * @param g    contexto gráfico de Swing
+     * @param ancho ancho del panel en píxeles
+     * @param alto  alto del panel en píxeles
+     */
     public void dibujar(Graphics2D g, int ancho, int alto) {
         // Sky gradient
         GradientPaint cielo = new GradientPaint(0, 0, new Color(100, 180, 255), 0, alto, new Color(200, 235, 255));
@@ -76,7 +91,7 @@ public class PantallaMenu {
         g.setColor(Color.DARK_GRAY);
         g.drawString("Se rompe al pisar", bx + 35, ly);
 
-        // ENTER prompt (blinking handled by always drawing)
+        // ENTER prompt
         g.setFont(new Font("Arial", Font.BOLD, 22));
         fm = g.getFontMetrics();
         String enter = "Presiona  ENTER  para jugar";
@@ -84,6 +99,14 @@ public class PantallaMenu {
         g.drawString(enter, (ancho - fm.stringWidth(enter)) / 2, alto - 55);
     }
 
+    /**
+     * Dibuja una nube decorativa geométrica semi-transparente en la posición indicada.
+     *
+     * @param g el contexto gráfico
+     * @param x coordenada X del borde izquierdo de la nube
+     * @param y coordenada Y de la base de la nube
+     * @param w ancho aproximado de la nube en píxeles
+     */
     private void dibujarNubeDecorativa(Graphics2D g, int x, int y, int w) {
         g.setColor(new Color(255, 255, 255, 180));
         g.fillOval(x,      y - 10, (int)(w * 0.45), (int)(w * 0.4));

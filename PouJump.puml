@@ -1,0 +1,273 @@
+@startuml PouJump
+
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor White
+    BorderColor #555555
+    ArrowColor  #333333
+    FontName    Arial
+}
+skinparam interface {
+    BackgroundColor #E3F2FD
+    BorderColor     #1565C0
+}
+skinparam enum {
+    BackgroundColor #FFF8E1
+    BorderColor     #F57F17
+}
+skinparam note {
+    BackgroundColor #F9FBE7
+    BorderColor     #827717
+}
+
+' ════════════════════════════════════════
+'  INTERFAZ
+' ════════════════════════════════════════
+
+interface Pantalla <<interface>> {
+    + dibujar(g: Graphics2D, ancho: int, alto: int): void
+}
+
+' ════════════════════════════════════════
+'  PAQUETE gui
+' ════════════════════════════════════════
+
+package com.pou.gui {
+
+    class PantallaMenu {
+        + dibujar(g: Graphics2D, ancho: int, alto: int): void
+        - dibujarNubeDecorativa(g: Graphics2D, x: int, y: int, w: int): void
+    }
+
+    class PantallaJuego {
+        - pou: Pou
+        - nubes: List<Nube>
+        - cameraY: double
+        - puntos: int
+        - record: int
+        + cargar(pou: Pou, nubes: List<Nube>, cameraY: double, puntos: int, record: int): void
+        + dibujar(g: Graphics2D, ancho: int, alto: int): void
+        - dibujarFondo(g: Graphics2D, ancho: int, alto: int, cameraY: double): void
+        - dibujarHUD(g: Graphics2D, ancho: int, puntos: int, record: int): void
+        - blend(a: Color, b: Color, t: float): Color
+    }
+
+    class PantallaGameOver {
+        - puntos: int
+        - record: int
+        + cargar(puntos: int, record: int): void
+        + dibujar(g: Graphics2D, ancho: int, alto: int): void
+    }
+
+}
+
+PantallaMenu     ..|> Pantalla
+PantallaJuego    ..|> Pantalla
+PantallaGameOver ..|> Pantalla
+
+' ════════════════════════════════════════
+'  PAQUETE logic
+' ════════════════════════════════════════
+
+package com.pou.logic {
+
+    enum GameState {
+        MENU
+        JUGANDO
+        GAME_OVER
+    }
+
+    class GameLoop {
+        + {static} ANCHO: int = 400
+        + {static} ALTO: int  = 620
+        - estado: GameState
+        - pou: Pou
+        - generadorNubes: GeneradorNubes
+        - control: ControlJugador
+        - puntaje: Puntaje
+        - cameraY: double
+        - pantallaPrimaria: Pantalla
+        --
+        + GameLoop()
+        + iniciarHilo(): void
+        + run(): void
+        - inicializar(): void
+        - iniciarPartida(): void
+        - actualizar(): void
+        - actualizarJuego(): void
+        # paintComponent(g: Graphics): void
+    }
+
+    class GeneradorNubes {
+        - {static} SEP_MIN: int = 65
+        - {static} SEP_MAX: int = 115
+        - nubes: List<Nube>
+        - anchoPanel: int
+        - yGenerada: double
+        --
+        + GeneradorNubes(anchoPanel: int, altoPanel: int)
+        + actualizar(cameraY: double, altoPanel: int): void
+        + getNubes(): List<Nube>
+        - generarIniciales(altoPanel: int): void
+        - agregarAleatoria(y: double): void
+        - tipoAleatorio(): Nube.Tipo
+    }
+
+    class ControlJugador {
+        - pou: Pou
+        - teclasPres: Set<Integer>
+        - enterPresionado: boolean
+        - escPresionado: boolean
+        --
+        + ControlJugador(pou: Pou)
+        + keyPressed(e: KeyEvent): void
+        + keyReleased(e: KeyEvent): void
+        + consumirEnter(): boolean
+        + consumirEsc(): boolean
+        + setPou(pou: Pou): void
+        - actualizarMovimiento(): void
+    }
+
+    class Puntaje {
+        - puntos: int
+        - record: int
+        - yInicial: double
+        --
+        + Puntaje(yInicial: double)
+        + actualizar(yActual: double): void
+        + reiniciar(yInicial: double): void
+        + getPuntos(): int
+        + getRecord(): int
+    }
+
+    class Colision {
+        + {static} verificar(pou: Pou, nubes: List<Nube>): void
+    }
+
+}
+
+' ════════════════════════════════════════
+'  PAQUETE entities
+' ════════════════════════════════════════
+
+package com.pou.entities {
+
+    class Pou {
+        + {static} ANCHO: int = 42
+        + {static} ALTO: int  = 50
+        - x: double
+        - y: double
+        - velocidadX: double
+        - velocidadY: double
+        - moviendoIzquierda: boolean
+        - moviendoDerecha: boolean
+        --
+        + Pou(x: double, y: double)
+        + actualizar(anchoPanel: int): void
+        + saltar(): void
+        + dibujar(g2d: Graphics2D, cameraY: double): void
+        + getBounds(): Rectangle
+        + getX(): double
+        + getY(): double
+        + getVelocidadY(): double
+        + setMoviendoIzquierda(v: boolean): void
+        + setMoviendoDerecha(v: boolean): void
+    }
+
+    class Nube {
+        + {static} ANCHO: int = 85
+        + {static} ALTO: int  = 16
+        - x: double
+        - y: double
+        - tipo: Tipo
+        - velocidadX: double
+        - rota: boolean
+        --
+        + Nube(x: double, y: double, tipo: Tipo, anchoPanel: int)
+        + actualizar(): void
+        + romper(): void
+        + dibujar(g2d: Graphics2D, cameraY: double): void
+        + estaRota(): boolean
+        + getBounds(): Rectangle
+        + getX(): double
+        + getY(): double
+        + getTipo(): Tipo
+    }
+
+    enum "Nube.Tipo" as NubeTipo {
+        NORMAL
+        MOVIL
+        FRAGIL
+    }
+
+}
+
+Nube *-- NubeTipo
+
+' ════════════════════════════════════════
+'  PAQUETE util
+' ════════════════════════════════════════
+
+package com.pou.util {
+
+    class Recursos <<utility>> {
+        + {static} POU: BufferedImage
+        + {static} NUBE_NORMAL: BufferedImage
+        + {static} NUBE_MOVIL: BufferedImage
+        + {static} NUBE_FRAGIL: BufferedImage
+        --
+        - {static} cargar(ruta: String): BufferedImage
+    }
+
+    class GestorSonido <<singleton>> {
+        - {static} INSTANCIA: GestorSonido
+        - musicaActiva: boolean
+        - reproductorMusica: Player
+        - hiloMusica: Thread
+        --
+        + {static} getInstancia(): GestorSonido
+        + iniciarMusicaFondo(): void
+        + detenerMusicaFondo(): void
+        + reproducirSalto(): void
+        + reproducirGameOver(): void
+        + reproducirNubeRota(): void
+        - reproducirMusicaEnBucle(): void
+        - reproducirEfecto(nombre: String): void
+        - cerrarReproductor(): void
+        - abrir(nombre: String): InputStream
+    }
+
+}
+
+' ════════════════════════════════════════
+'  RELACIONES
+' ════════════════════════════════════════
+
+' Herencia / implementación
+GameLoop     --|>  JPanel
+GameLoop     ..|>  Runnable
+ControlJugador --|> KeyAdapter
+
+' Composición (GameLoop posee)
+GameLoop "1" *-- "1" PantallaMenu
+GameLoop "1" *-- "1" PantallaJuego
+GameLoop "1" *-- "1" PantallaGameOver
+GameLoop "1" *-- "1" Pou
+GameLoop "1" *-- "1" GeneradorNubes
+GameLoop "1" *-- "1" ControlJugador
+GameLoop "1" *-- "1" Puntaje
+
+' Referencia polimórfica
+GameLoop "1" o-- "1" Pantalla : pantallaPrimaria
+
+' Dependencias de uso
+GameLoop      -->  GameState
+ControlJugador --> Pou
+GeneradorNubes "1" *-- "0..*" Nube
+Colision       ..>  Pou          : usa
+Colision       ..>  Nube         : usa
+Colision       ..>  GestorSonido : usa
+Pou            ..>  Recursos     : usa
+Nube           ..>  Recursos     : usa
+
+@enduml
