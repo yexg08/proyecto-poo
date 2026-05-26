@@ -2,8 +2,10 @@ package com.pou.logic;
 
 import com.pou.entities.Nube;
 import com.pou.entities.Pou;
+import com.pou.entities.PowerUp;
 import com.pou.util.GestorSonido;
 
+import java.awt.*;
 import java.util.List;
 
 /**
@@ -28,6 +30,26 @@ public class Colision {
      * @param pou   entidad jugador cuya posición y velocidad se evalúan
      * @param nubes lista de nubes activas en el mundo
      */
+    /**
+     * Verifica si Pou toca algún power-up de la lista y, en caso afirmativo,
+     * lo marca como recogido y devuelve su tipo para que el game loop aplique
+     * el efecto correspondiente.
+     *
+     * @param pou      entidad jugador
+     * @param powerUps lista de power-ups activos en el mundo
+     * @return tipo del power-up recogido, o {@code null} si no hubo colisión
+     */
+    public static PowerUp.Tipo verificarPowerUps(Pou pou, List<PowerUp> powerUps) {
+        Rectangle pouBounds = pou.getBounds();
+        for (PowerUp p : powerUps) {
+            if (!p.isRecogido() && pouBounds.intersects(p.getBounds())) {
+                p.recoger();
+                return p.getTipo();
+            }
+        }
+        return null;
+    }
+
     public static void verificar(Pou pou, List<Nube> nubes) {
         // Only check collision while Pou is falling
         if (pou.getVelocidadY() <= 0) return;

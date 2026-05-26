@@ -1,6 +1,7 @@
 package com.pou.logic;
 
 import com.pou.entities.Pou;
+import com.pou.entities.PowerUp;
 import com.pou.gui.Pantalla;
 import com.pou.gui.PantallaGameOver;
 import com.pou.gui.PantallaJuego;
@@ -39,14 +40,16 @@ public class GameLoop extends JPanel implements Runnable {
     private Thread hilo;
     private volatile GameState estado;
 
-    private Pou             pou;
-    private GeneradorNubes  generadorNubes;
-    private ControlJugador  control;
-    private Puntaje         puntaje;
+    private Pou                pou;
+    private GeneradorNubes     generadorNubes;
+    private GeneradorPowerUps  generadorPowerUps;
+    private ControlJugador     control;
+    private Puntaje            puntaje;
 
     private double cameraY;
     private double cameraYMin;
     private double yInicialPou;
+    private int    vidas;
 
     private final PantallaMenu     pantallaMenu     = new PantallaMenu();
     private final PantallaJuego    pantallaJuego    = new PantallaJuego();
@@ -94,10 +97,12 @@ public class GameLoop extends JPanel implements Runnable {
      */
     private void iniciarPartida() {
         yInicialPou    = ALTO - 150.0;
-        pou            = new Pou(ANCHO / 2.0 - Pou.ANCHO / 2.0, yInicialPou);
-        generadorNubes = new GeneradorNubes(ANCHO, ALTO);
+        pou               = new Pou(ANCHO / 2.0 - Pou.ANCHO / 2.0, yInicialPou);
+        generadorNubes    = new GeneradorNubes(ANCHO, ALTO);
+        generadorPowerUps = new GeneradorPowerUps(ANCHO);
         cameraY        = 0.0;
         cameraYMin     = 0.0;
+        vidas          = 2;
 
         if (puntaje == null) {
             puntaje = new Puntaje(yInicialPou);
@@ -215,15 +220,32 @@ public class GameLoop extends JPanel implements Runnable {
         }
 
         generadorNubes.actualizar(cameraY, ALTO);
+        generadorPowerUps.actualizar(cameraY, ALTO);
         Colision.verificar(pou, generadorNubes.getNubes());
         puntaje.actualizar(pou.getY());
 
-        // Game over when Pou falls below the bottom of the visible area
+        PowerUp.Tipo powerUpRecogido = Colision.verificarPowerUps(pou, generadorPowerUps.getPowerUps());
+        if (powerUpRecogido != null) {
+            GestorSonido.getInstancia().reproducirSalto();
+            if (powerUpRecogido == PowerUp.Tipo.VIDA_EXTRA) {
+                if (vidas < 3) vidas++;
+            } else {
+                pou.activarSuperSalto();
+            }
+        }
+
+        // Life lost or game over when Pou falls below the bottom of the visible area
         if (pou.getY() > cameraY + ALTO + 60) {
-            estado = GameState.GAME_OVER;
-            cronometro.detener();
-            GestorSonido.getInstancia().detenerMusicaFondo();
-            GestorSonido.getInstancia().reproducirGameOver();
+            vidas--;
+            if (vidas <= 0) {
+                estado = GameState.GAME_OVER;
+                cronometro.detener();
+                GestorSonido.getInstancia().detenerMusicaFondo();
+                GestorSonido.getInstancia().reproducirGameOver();
+            } else {
+                pou = new Pou(ANCHO / 2.0 - Pou.ANCHO / 2.0, cameraY + ALTO * 0.7);
+                if (control != null) control.setPou(pou);
+            }
         }
     }
 
@@ -249,8 +271,9 @@ public class GameLoop extends JPanel implements Runnable {
 
         // Load context data before drawing
         if (estado == GameState.JUGANDO || estado == GameState.GAME_OVER) {
-            pantallaJuego.cargar(pou, generadorNubes.getNubes(), cameraY,
-                    puntaje.getPuntos(), puntaje.getRecord(), cronometro.getSegundos());
+            pantallaJuego.cargar(pou, generadorNubes.getNubes(), generadorPowerUps.getPowerUps(),
+                    cameraY, puntaje.getPuntos(), puntaje.getRecord(),
+                    cronometro.getSegundos(), vidas, pou.isSuperSaltoActivo());
         }
 
         // Polymorphic call — GameLoop doesn't know which Pantalla is active

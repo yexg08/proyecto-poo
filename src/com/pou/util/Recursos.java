@@ -26,7 +26,13 @@ public class Recursos {
     public static final BufferedImage NUBE_MOVIL  = cargar("/resources/sprites/spritesNubes/Nube_en_movimiento-removebg-preview.png");
 
     /** Sprite de nube frágil (se rompe al ser pisada). */
-    public static final BufferedImage NUBE_FRAGIL = cargar("/resources/sprites/spritesNubes/Nube_fragil-removebg-preview.png");
+    public static final BufferedImage NUBE_FRAGIL  = cargar("/resources/sprites/spritesNubes/Nube_fragil-removebg-preview.png");
+
+    /** Sprite del power-up de vida extra (cruz verde). */
+    public static final BufferedImage POWERUP_VIDA  = cargar("/resources/powerups/sprites/sprite_vida_extra-removebg-preview.png");
+
+    /** Sprite del power-up de super salto (rayo amarillo). */
+    public static final BufferedImage POWERUP_SALTO = cargar("/resources/powerups/sprites/sprite_super_salto-removebg-preview.png");
 
     /**
      * Carga una imagen PNG desde el classpath.

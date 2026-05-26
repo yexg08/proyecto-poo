@@ -22,14 +22,18 @@ public class Pou {
     /** Alto del sprite/hitbox de Pou en píxeles. */
     public static final int ALTO  = 50;
 
-    private static final double GRAVEDAD       = 0.40;
-    private static final double VEL_SALTO      = -14.5;
-    private static final double VEL_MOVIMIENTO = 5.5;
-    private static final double VEL_MAX_CAIDA  = 16.0;
+    private static final double GRAVEDAD            = 0.40;
+    private static final double VEL_SALTO           = -14.5;
+    private static final double VEL_SUPER_SALTO     = -22.0;
+    private static final double VEL_MOVIMIENTO      = 5.5;
+    private static final double VEL_MAX_CAIDA       = 16.0;
+    private static final int    DURACION_SUPER_SALTO = 300; // 5 s a 60 fps
 
-    private double x, y;
-    private double velocidadX, velocidadY;
+    private double  x, y;
+    private double  velocidadX, velocidadY;
     private boolean moviendoIzquierda, moviendoDerecha;
+    private boolean superSaltoActivo;
+    private int     ticksSuperSalto;
 
     /**
      * Crea a Pou en la posición indicada con velocidad vertical de salto inicial.
@@ -51,6 +55,8 @@ public class Pou {
      * @param anchoPanel ancho del panel en píxeles; se usa para el wrapping horizontal
      */
     public void actualizar(int anchoPanel) {
+        if (superSaltoActivo && --ticksSuperSalto <= 0) superSaltoActivo = false;
+
         velocidadY += GRAVEDAD;
         if (velocidadY > VEL_MAX_CAIDA) velocidadY = VEL_MAX_CAIDA;
 
@@ -67,12 +73,29 @@ public class Pou {
     }
 
     /**
-     * Aplica el impulso de salto reiniciando la velocidad vertical al valor negativo
-     * de salto. Lo invoca {@link com.pou.logic.Colision} al detectar un aterrizaje.
+     * Aplica el impulso de salto reiniciando la velocidad vertical. Si el super salto
+     * está activo usa {@code VEL_SUPER_SALTO}; en caso contrario usa {@code VEL_SALTO}.
+     * Lo invoca {@link com.pou.logic.Colision} al detectar un aterrizaje.
      */
     public void saltar() {
-        velocidadY = VEL_SALTO;
+        velocidadY = superSaltoActivo ? VEL_SUPER_SALTO : VEL_SALTO;
     }
+
+    /**
+     * Activa el super salto por {@value #DURACION_SUPER_SALTO} fotogramas.
+     * Mientras está activo {@link #saltar()} aplica una velocidad vertical mayor.
+     */
+    public void activarSuperSalto() {
+        superSaltoActivo = true;
+        ticksSuperSalto  = DURACION_SUPER_SALTO;
+    }
+
+    /**
+     * Indica si el power-up de super salto está activo en este momento.
+     *
+     * @return {@code true} si el super salto sigue vigente
+     */
+    public boolean isSuperSaltoActivo() { return superSaltoActivo; }
 
     /**
      * Dibuja a Pou en el contexto gráfico aplicando el desplazamiento de cámara.

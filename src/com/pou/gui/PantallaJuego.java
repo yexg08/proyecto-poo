@@ -2,6 +2,8 @@ package com.pou.gui;
 
 import com.pou.entities.Nube;
 import com.pou.entities.Pou;
+import com.pou.entities.PowerUp;
+import com.pou.util.Recursos;
 
 import java.awt.*;
 import java.util.List;
@@ -19,31 +21,43 @@ import java.util.Random;
  */
 public class PantallaJuego implements Pantalla {
 
-    private Pou         pou;
-    private List<Nube>  nubes;
-    private double      cameraY;
-    private int         puntos;
-    private int         record;
-    private int         tiempo;
+    private Pou          pou;
+    private List<Nube>   nubes;
+    private List<PowerUp> powerUps;
+    private double       cameraY;
+    private int          puntos;
+    private int          record;
+    private int          tiempo;
+    private int          vidas;
+    private boolean      superSaltoActivo;
 
     /**
      * Carga el contexto de datos que serán usados en el próximo fotograma.
      * Debe llamarse antes de {@link #dibujar} cuando el juego está en estado {@code JUGANDO}
      * o {@code GAME_OVER}.
      *
-     * @param pou     entidad del jugador
-     * @param nubes   lista de nubes activas
-     * @param cameraY desplazamiento de cámara en coordenadas del mundo
-     * @param puntos  puntuación actual en metros
-     * @param record  récord de la sesión en metros
+     * @param pou             entidad del jugador
+     * @param nubes           lista de nubes activas
+     * @param powerUps        lista de power-ups activos en el mundo
+     * @param cameraY         desplazamiento de cámara en coordenadas del mundo
+     * @param puntos          puntuación actual en metros
+     * @param record          récord de la sesión en metros
+     * @param tiempo          segundos de la partida actual
+     * @param vidas           número de vidas restantes del jugador
+     * @param superSaltoActivo {@code true} si el power-up de super salto está vigente
      */
-    public void cargar(Pou pou, List<Nube> nubes, double cameraY, int puntos, int record, int tiempo) {
-        this.pou     = pou;
-        this.nubes   = nubes;
-        this.cameraY = cameraY;
-        this.puntos  = puntos;
-        this.record  = record;
-        this.tiempo  = tiempo;
+    public void cargar(Pou pou, List<Nube> nubes, List<PowerUp> powerUps,
+                       double cameraY, int puntos, int record, int tiempo,
+                       int vidas, boolean superSaltoActivo) {
+        this.pou             = pou;
+        this.nubes           = nubes;
+        this.powerUps        = powerUps;
+        this.cameraY         = cameraY;
+        this.puntos          = puntos;
+        this.record          = record;
+        this.tiempo          = tiempo;
+        this.vidas           = vidas;
+        this.superSaltoActivo = superSaltoActivo;
     }
 
     /**
@@ -56,9 +70,10 @@ public class PantallaJuego implements Pantalla {
     @Override
     public void dibujar(Graphics2D g, int ancho, int alto) {
         dibujarFondo(g, ancho, alto, cameraY);
-        for (Nube n : nubes) n.dibujar(g, cameraY);
+        for (Nube n : nubes)     n.dibujar(g, cameraY);
+        for (PowerUp p : powerUps) p.dibujar(g, cameraY);
         pou.dibujar(g, cameraY);
-        dibujarHUD(g, ancho, puntos, record);
+        dibujarHUD(g, ancho, puntos, record, vidas, superSaltoActivo);
     }
 
     /**
@@ -108,16 +123,21 @@ public class PantallaJuego implements Pantalla {
     }
 
     /**
-     * Dibuja el HUD en la esquina superior izquierda con la altura actual y el récord.
+     * Dibuja el HUD en la esquina superior izquierda con la altura, el récord, el
+     * tiempo y (si está activo) el indicador de super salto; y los iconos de vidas
+     * restantes en la esquina superior derecha.
      *
-     * @param g      contexto gráfico de Swing
-     * @param ancho  ancho del panel en píxeles
-     * @param puntos puntuación actual en metros
-     * @param record récord de la sesión en metros
+     * @param g               contexto gráfico de Swing
+     * @param ancho           ancho del panel en píxeles
+     * @param puntos          puntuación actual en metros
+     * @param record          récord de la sesión en metros
+     * @param vidas           número de vidas restantes del jugador
+     * @param superSaltoActivo {@code true} si el indicador de super salto debe mostrarse
      */
-    private void dibujarHUD(Graphics2D g, int ancho, int puntos, int record) {
+    private void dibujarHUD(Graphics2D g, int ancho, int puntos, int record, int vidas, boolean superSaltoActivo) {
+        int hudAlto = superSaltoActivo ? 102 : 84;
         g.setColor(new Color(0, 0, 0, 110));
-        g.fillRoundRect(8, 8, 155, 84, 14, 14);
+        g.fillRoundRect(8, 8, 155, hudAlto, 14, 14);
 
         g.setFont(new Font("Arial", Font.BOLD, 15));
         g.setColor(Color.WHITE);
@@ -130,6 +150,56 @@ public class PantallaJuego implements Pantalla {
         g.setFont(new Font("Arial", Font.BOLD, 14));
         g.setColor(new Color(160, 220, 255));
         g.drawString("Tiempo:  " + tiempo + " s", 18, 74);
+
+        if (superSaltoActivo) {
+            g.setFont(new Font("Arial", Font.BOLD, 13));
+            g.setColor(new Color(255, 230, 0));
+            g.drawString("* SUPER SALTO", 18, 96);
+        }
+
+        // Life icons — top-right corner
+        if (vidas <= 0) return;
+        int icoW = 22, icoH = 26, gap = 6, margen = 8;
+        int totalW = vidas * icoW + (vidas - 1) * gap;
+        int ix = ancho - margen - totalW;
+        int iy = margen;
+
+        g.setColor(new Color(0, 0, 0, 110));
+        g.fillRoundRect(ix - 6, iy, totalW + 12, icoH + 8, 14, 14);
+
+        for (int i = 0; i < vidas; i++) {
+            int lx = ix + i * (icoW + gap);
+            int ly = iy + 4;
+            if (Recursos.POU != null) {
+                g.drawImage(Recursos.POU, lx, ly, icoW, icoH, null);
+            } else {
+                dibujarMiniPou(g, lx, ly, icoW, icoH);
+            }
+        }
+    }
+
+    /**
+     * Dibuja una representación geométrica reducida de Pou usada como icono de vida.
+     *
+     * @param g contexto gráfico de Swing
+     * @param x coordenada X de la esquina superior izquierda del icono
+     * @param y coordenada Y de la esquina superior izquierda del icono
+     * @param w ancho del icono en píxeles
+     * @param h alto del icono en píxeles
+     */
+    private void dibujarMiniPou(Graphics2D g, int x, int y, int w, int h) {
+        g.setColor(new Color(180, 120, 60));
+        g.fillRoundRect(x, y, w, h, 8, 8);
+        g.setColor(Color.WHITE);
+        g.fillOval(x + 3, y + 5, 5, 6);
+        g.fillOval(x + 13, y + 5, 5, 6);
+        g.setColor(new Color(30, 20, 10));
+        g.fillOval(x + 4, y + 7, 3, 3);
+        g.fillOval(x + 14, y + 7, 3, 3);
+        g.setColor(new Color(100, 50, 10));
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawArc(x + 6, y + 16, 10, 5, 0, 180);
+        g.setStroke(new BasicStroke(1f));
     }
 
     /**
